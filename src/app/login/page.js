@@ -11,11 +11,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/services/authService";
-import { setToken } from "@/lib/token";
+import { login as loginRequest } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   // Controlled form fields. Prefilled with the assignment's demo credentials
   // so testing is quick; the user can change them.
@@ -42,9 +43,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       // Call the auth service (which uses the shared axios instance).
-      const data = await login({ username: username.trim(), password });
-      // Save the token so the axios interceptor attaches it to future requests.
-      setToken(data.accessToken);
+      const data = await loginRequest({ username: username.trim(), password });
+      // Store token + user in context (also persists the token).
+      login(data);
       // Go to the products page (built in a later task).
       router.push("/products");
     } catch (err) {
