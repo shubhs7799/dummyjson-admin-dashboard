@@ -69,6 +69,14 @@ function ProductDetailsContent() {
         >
           ← Back to products
         </button>
+        {product && !notFound && (
+          <Link
+            href={`/products/${id}/edit`}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            Edit
+          </Link>
+        )}
       </header>
 
       <div className="mx-auto max-w-5xl p-6">

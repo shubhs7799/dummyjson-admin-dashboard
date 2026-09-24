@@ -56,3 +56,18 @@ export async function getProduct({ id, signal } = {}) {
   const response = await api.get(`/products/${id}`, { signal });
   return response.data;
 }
+
+export async function createProduct({ payload, signal } = {}) {
+  const response = await api.post("/products/add", payload, { signal });
+  return response.data;
+}
+
+export async function updateProduct({ id, payload, signal } = {}) {
+  const response = await api.put(`/products/${id}`, payload, { signal });
+  return response.data;
+}
+
+export async function deleteProduct({ id, signal } = {}) {
+  const response = await api.delete(`/products/${id}`, { signal });
+  return response.data;
+}

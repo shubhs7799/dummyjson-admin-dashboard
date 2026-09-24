@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProductList from "@/components/ProductList";
 import Pagination from "@/components/Pagination";
@@ -130,6 +131,12 @@ function ProductsContent() {
               {user?.firstName || user?.username}
             </span>
           </span>
+          <Link
+            href="/products/new"
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            + Add product
+          </Link>
           <button
             onClick={logout}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
