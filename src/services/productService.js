@@ -51,3 +51,8 @@ export async function getCategories({ signal } = {}) {
   const response = await api.get("/products/categories", { signal });
   return response.data;
 }
+
+export async function getProduct({ id, signal } = {}) {
+  const response = await api.get(`/products/${id}`, { signal });
+  return response.data;
+}
