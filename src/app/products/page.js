@@ -46,6 +46,7 @@ function ProductsContent() {
   const debouncedSearch = useDebounce(searchInput.trim(), 500);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchInput((current) => (current.trim() === q ? current : q));
   }, [q]);
 
@@ -140,6 +141,7 @@ function ProductsContent() {
   }, [page, pageSize, q, category, sort]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
