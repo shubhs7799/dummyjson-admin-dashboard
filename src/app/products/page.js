@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProductList from "@/components/ProductList";
 import Pagination from "@/components/Pagination";
@@ -14,6 +15,7 @@ import {
   getCategories,
 } from "@/services/productService";
 import { useDebounce } from "@/hooks/useDebounce";
+import { parseProductParams, buildProductQuery } from "@/lib/productParams";
 
 function parseSort(sort) {
   if (!sort) return { sortBy: undefined, order: undefined };
@@ -23,21 +25,31 @@ function parseSort(sort) {
 
 function ProductsContent() {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [categories, setCategories] = useState([]);
+  const categorySlugs = useMemo(
+    () => categories.map((c) => c.slug),
+    [categories]
+  );
+
+  const { page, pageSize, q, category, sort } = useMemo(
+    () => parseProductParams(searchParams, categorySlugs),
+    [searchParams, categorySlugs]
+  );
+
+  const [searchInput, setSearchInput] = useState(q);
+  const debouncedSearch = useDebounce(searchInput.trim(), 500);
+
+  useEffect(() => {
+    setSearchInput((current) => (current.trim() === q ? current : q));
+  }, [q]);
 
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebounce(searchInput.trim(), 500);
-
-  const [categories, setCategories] = useState([]);
-  const [category, setCategory] = useState("");
-  const [sort, setSort] = useState("");
 
   const abortRef = useRef(null);
 
@@ -46,6 +58,21 @@ function ProductsContent() {
       .then(setCategories)
       .catch(() => setCategories([]));
   }, []);
+
+  const updateUrl = useCallback(
+    (next) => {
+      const merged = { page, pageSize, q, category, sort, ...next };
+      const query = buildProductQuery(merged);
+      router.push(query ? `/products?${query}` : "/products");
+    },
+    [router, page, pageSize, q, category, sort]
+  );
+
+  useEffect(() => {
+    if (debouncedSearch !== q) {
+      updateUrl({ q: debouncedSearch, page: 1 });
+    }
+  }, [debouncedSearch, q, updateUrl]);
 
   const load = useCallback(async () => {
     if (abortRef.current) {
@@ -68,8 +95,8 @@ function ProductsContent() {
       };
 
       let data;
-      if (debouncedSearch) {
-        data = await searchProducts({ q: debouncedSearch, ...base });
+      if (q) {
+        data = await searchProducts({ q, ...base });
       } else if (category) {
         data = await getProductsByCategory({ category, ...base });
       } else {
@@ -86,20 +113,11 @@ function ProductsContent() {
       setError(err?.message || "Failed to load products.");
       setLoading(false);
     }
-  }, [page, pageSize, debouncedSearch, category, sort]);
+  }, [page, pageSize, q, category, sort]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, category, sort]);
-
-  function handlePageSizeChange(nextSize) {
-    setPageSize(nextSize);
-    setPage(1);
-  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -133,14 +151,14 @@ function ProductsContent() {
           <Filters
             categories={categories}
             category={category}
-            onCategoryChange={setCategory}
+            onCategoryChange={(value) => updateUrl({ category: value, page: 1 })}
             sort={sort}
-            onSortChange={setSort}
-            categoryDisabled={!!debouncedSearch}
+            onSortChange={(value) => updateUrl({ sort: value, page: 1 })}
+            categoryDisabled={!!q}
           />
         </div>
 
-        {debouncedSearch && (
+        {q && (
           <p className="mb-4 text-xs text-gray-500">
             Category filter is disabled while searching (the API cannot search
             and filter by category at the same time).
@@ -153,11 +171,7 @@ function ProductsContent() {
           <ErrorState message={error} onRetry={load} />
         ) : products.length === 0 ? (
           <EmptyState
-            message={
-              debouncedSearch
-                ? `No products found for "${debouncedSearch}".`
-                : "No products found."
-            }
+            message={q ? `No products found for "${q}".` : "No products found."}
           />
         ) : (
           <>
@@ -166,8 +180,10 @@ function ProductsContent() {
               page={page}
               pageSize={pageSize}
               total={total}
-              onPageChange={setPage}
-              onPageSizeChange={handlePageSizeChange}
+              onPageChange={(nextPage) => updateUrl({ page: nextPage })}
+              onPageSizeChange={(nextSize) =>
+                updateUrl({ pageSize: nextSize, page: 1 })
+              }
             />
           </>
         )}
@@ -179,7 +195,9 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <ProtectedRoute>
-      <ProductsContent />
+      <Suspense fallback={<Loader label="Loading..." />}>
+        <ProductsContent />
+      </Suspense>
     </ProtectedRoute>
   );
 }
