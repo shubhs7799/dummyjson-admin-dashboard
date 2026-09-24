@@ -1,15 +1,9 @@
 "use client";
-// src/app/products/page.js
-// Product list page. Fetches products from the API and shows the four states:
-//  - loading  -> <Loader />
-//  - error    -> <ErrorState /> with a Retry button
-//  - empty    -> <EmptyState />
-//  - success  -> <ProductList /> (table on desktop, cards on mobile)
-// Wrapped in <ProtectedRoute> so only logged-in users can view it.
 
 import { useCallback, useEffect, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProductList from "@/components/ProductList";
+import Pagination from "@/components/Pagination";
 import { Loader, ErrorState, EmptyState } from "@/components/States";
 import { useAuth } from "@/context/AuthContext";
 import { getProducts } from "@/services/productService";
@@ -17,20 +11,20 @@ import { getProducts } from "@/services/productService";
 function ProductsContent() {
   const { user, logout } = useAuth();
 
-  // Data + async state.
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch products. Wrapped in useCallback so the Retry button and the
-  // initial effect share the exact same function.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      // For Task #5 we load the first 10. Pagination comes in Task #6.
-      const data = await getProducts({ limit: 10, skip: 0 });
+      const skip = (page - 1) * pageSize;
+      const data = await getProducts({ limit: pageSize, skip });
       setProducts(data.products);
       setTotal(data.total);
     } catch (err) {
@@ -38,16 +32,19 @@ function ProductsContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, pageSize]);
 
-  // Load once when the page mounts.
   useEffect(() => {
     load();
   }, [load]);
 
+  function handlePageSizeChange(nextSize) {
+    setPageSize(nextSize);
+    setPage(1);
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Top bar: greeting + logout */}
       <header className="flex items-center justify-between border-b bg-white px-6 py-4">
         <h1 className="text-lg font-semibold text-gray-900">Products</h1>
         <div className="flex items-center gap-4">
@@ -67,7 +64,6 @@ function ProductsContent() {
       </header>
 
       <div className="mx-auto max-w-6xl p-6">
-        {/* Render exactly one state at a time. */}
         {loading ? (
           <Loader label="Loading products..." />
         ) : error ? (
@@ -76,10 +72,14 @@ function ProductsContent() {
           <EmptyState />
         ) : (
           <>
-            <p className="mb-4 text-sm text-gray-500">
-              Showing {products.length} of {total} products
-            </p>
             <ProductList products={products} />
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </>
         )}
       </div>

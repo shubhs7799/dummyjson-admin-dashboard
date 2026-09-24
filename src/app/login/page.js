@@ -1,13 +1,4 @@
 "use client";
-// src/app/login/page.js
-// Login screen. "use client" because it uses React state and event handlers.
-// Responsibilities:
-//  - collect username + password
-//  - basic validation (both required)
-//  - call the auth service
-//  - show an error message on failure
-//  - disable the button while submitting so rapid clicks can't fire
-//    multiple login requests (an assignment rule)
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,22 +9,17 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  // Controlled form fields. Prefilled with the assignment's demo credentials
-  // so testing is quick; the user can change them.
   const [username, setUsername] = useState("emilys");
   const [password, setPassword] = useState("emilyspass");
 
-  // UI state: an error message to show, and whether a request is in flight.
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Guard: if a request is already running, ignore extra clicks/submits.
     if (submitting) return;
 
-    // Simple client-side validation before hitting the API.
     if (!username.trim() || !password.trim()) {
       setError("Please enter both username and password.");
       return;
@@ -42,18 +28,12 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      // Call the auth service (which uses the shared axios instance).
       const data = await loginRequest({ username: username.trim(), password });
-      // Store token + user in context (also persists the token).
       login(data);
-      // Go to the products page (built in a later task).
       router.push("/products");
     } catch (err) {
-      // err is the normalized error from the axios interceptor.
-      // DummyJSON returns "Invalid credentials" on wrong username/password.
       setError(err?.message || "Login failed. Please try again.");
     } finally {
-      // Always re-enable the button, whether we succeeded or failed.
       setSubmitting(false);
     }
   }
@@ -68,7 +48,6 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* Username field */}
           <div>
             <label
               htmlFor="username"
@@ -87,7 +66,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Password field */}
           <div>
             <label
               htmlFor="password"
@@ -106,7 +84,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Error message (only shown when there is one) */}
           {error && (
             <p
               role="alert"
@@ -116,7 +93,6 @@ export default function LoginPage() {
             </p>
           )}
 
-          {/* Submit button. Disabled + label change while submitting. */}
           <button
             type="submit"
             disabled={submitting}

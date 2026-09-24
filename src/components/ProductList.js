@@ -1,26 +1,11 @@
 "use client";
-// src/components/ProductList.js
-// Presentational component: given an array of products, render them as a
-// TABLE on desktop (md and up) and as CARDS on mobile (below md).
-// It holds no data-fetching logic — the page passes products in as a prop.
-// Rows/cards link to the product details page (built in a later task).
 
 import Link from "next/link";
-
-// Small helper to show a star rating value cleanly.
-function Rating({ value }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-sm">
-      <span className="text-yellow-500">★</span>
-      {value?.toFixed(1)}
-    </span>
-  );
-}
+import StarRating from "@/components/StarRating";
 
 export default function ProductList({ products }) {
   return (
     <>
-      {/* ---------- DESKTOP TABLE (hidden on small screens) ---------- */}
       <div className="hidden overflow-x-auto rounded-xl border border-gray-200 bg-white md:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-gray-50 text-gray-600">
@@ -57,7 +42,7 @@ export default function ProductList({ products }) {
                 </td>
                 <td className="px-4 py-3 text-gray-900">${p.price}</td>
                 <td className="px-4 py-3">
-                  <Rating value={p.rating} />
+                  <StarRating value={p.rating} />
                 </td>
                 <td className="px-4 py-3 text-gray-700">{p.stock}</td>
               </tr>
@@ -66,7 +51,6 @@ export default function ProductList({ products }) {
         </table>
       </div>
 
-      {/* ---------- MOBILE CARDS (hidden on md and up) ---------- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:hidden">
         {products.map((p) => (
           <Link
@@ -87,7 +71,7 @@ export default function ProductList({ products }) {
               </p>
               <div className="mt-2 flex items-center gap-3 text-sm">
                 <span className="font-semibold text-gray-900">${p.price}</span>
-                <Rating value={p.rating} />
+                <StarRating value={p.rating} size={14} />
                 <span className="text-gray-500">Stock: {p.stock}</span>
               </div>
             </div>
