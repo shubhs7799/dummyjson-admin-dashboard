@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProductList from "@/components/ProductList";
 import Pagination from "@/components/Pagination";
 import { Loader, ErrorState, EmptyState } from "@/components/States";
 import { useAuth } from "@/context/AuthContext";
-import { getProducts } from "@/services/productService";
+import { getProducts, searchProducts } from "@/services/productService";
+import { useDebounce } from "@/hooks/useDebounce";
 
 function ProductsContent() {
   const { user, logout } = useAuth();
@@ -19,24 +20,45 @@ function ProductsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput.trim(), 500);
+
+  const abortRef = useRef(null);
+
   const load = useCallback(async () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError("");
     try {
       const skip = (page - 1) * pageSize;
-      const data = await getProducts({ limit: pageSize, skip });
+      const params = { limit: pageSize, skip, signal: controller.signal };
+      const data = debouncedSearch
+        ? await searchProducts({ q: debouncedSearch, ...params })
+        : await getProducts(params);
       setProducts(data.products);
       setTotal(data.total);
+      setLoading(false);
     } catch (err) {
+      if (err?.canceled) {
+        return;
+      }
       setError(err?.message || "Failed to load products.");
-    } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, debouncedSearch]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   function handlePageSizeChange(nextSize) {
     setPageSize(nextSize);
@@ -64,12 +86,28 @@ function ProductsContent() {
       </header>
 
       <div className="mx-auto max-w-6xl p-6">
+        <div className="mb-6">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search products..."
+            className="w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+        </div>
+
         {loading ? (
           <Loader label="Loading products..." />
         ) : error ? (
           <ErrorState message={error} onRetry={load} />
         ) : products.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            message={
+              debouncedSearch
+                ? `No products found for "${debouncedSearch}".`
+                : "No products found."
+            }
+          />
         ) : (
           <>
             <ProductList products={products} />

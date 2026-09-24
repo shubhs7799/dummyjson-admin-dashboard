@@ -24,6 +24,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject({
+        canceled: true,
+        status: null,
+        message: "Request canceled",
+        data: null,
+        original: error,
+      });
+    }
+
     let status = null;
     let message = "Something went wrong. Please try again.";
     let data = null;
