@@ -7,6 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ProductList from "@/components/ProductList";
 import Pagination from "@/components/Pagination";
 import Filters from "@/components/Filters";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Loader, ErrorState, EmptyState } from "@/components/States";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -14,6 +15,7 @@ import {
   searchProducts,
   getProductsByCategory,
   getCategories,
+  deleteProduct,
 } from "@/services/productService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { parseProductParams, buildProductQuery } from "@/lib/productParams";
@@ -53,6 +55,27 @@ function ProductsContent() {
   const [error, setError] = useState("");
 
   const abortRef = useRef(null);
+
+  const [toDelete, setToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  async function confirmDelete() {
+    if (deleting || !toDelete) return;
+    setDeleting(true);
+    try {
+      await deleteProduct({ id: toDelete.id });
+      setProducts((prev) => prev.filter((p) => p.id !== toDelete.id));
+      setTotal((prev) => Math.max(0, prev - 1));
+      setNotice(`Deleted "${toDelete.title}". (Not persisted by the API.)`);
+      setToDelete(null);
+    } catch (err) {
+      setNotice(err?.message || "Failed to delete product.");
+      setToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     getCategories()
@@ -172,6 +195,18 @@ function ProductsContent() {
           </p>
         )}
 
+        {notice && (
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            <span>{notice}</span>
+            <button
+              onClick={() => setNotice("")}
+              className="text-blue-600 hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <Loader label="Loading products..." />
         ) : error ? (
@@ -182,7 +217,7 @@ function ProductsContent() {
           />
         ) : (
           <>
-            <ProductList products={products} />
+            <ProductList products={products} onDelete={setToDelete} />
             <Pagination
               page={page}
               pageSize={pageSize}
@@ -195,6 +230,20 @@ function ProductsContent() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete product"
+        message={
+          toDelete
+            ? `Are you sure you want to delete "${toDelete.title}"? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => (deleting ? null : setToDelete(null))}
+      />
     </main>
   );
 }

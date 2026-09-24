@@ -3,7 +3,7 @@
 import Link from "next/link";
 import StarRating from "@/components/StarRating";
 
-export default function ProductList({ products }) {
+export default function ProductList({ products, onDelete }) {
   return (
     <>
       <div className="hidden overflow-x-auto rounded-xl border border-gray-200 bg-white md:block">
@@ -16,6 +16,7 @@ export default function ProductList({ products }) {
               <th className="px-4 py-3 font-medium">Price</th>
               <th className="px-4 py-3 font-medium">Rating</th>
               <th className="px-4 py-3 font-medium">Stock</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +46,22 @@ export default function ProductList({ products }) {
                   <StarRating value={p.rating} />
                 </td>
                 <td className="px-4 py-3 text-gray-700">{p.stock}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/products/${p.id}/edit`}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => onDelete?.(p)}
+                      className="text-sm font-medium text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -53,29 +70,48 @@ export default function ProductList({ products }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:hidden">
         {products.map((p) => (
-          <Link
+          <div
             key={p.id}
-            href={`/products/${p.id}`}
-            className="flex gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={p.thumbnail}
-              alt={p.title}
-              className="h-20 w-20 shrink-0 rounded-lg object-cover"
-            />
-            <div className="min-w-0">
-              <h3 className="truncate font-medium text-gray-900">{p.title}</h3>
-              <p className="mt-0.5 text-sm capitalize text-gray-500">
-                {p.category}
-              </p>
-              <div className="mt-2 flex items-center gap-3 text-sm">
-                <span className="font-semibold text-gray-900">${p.price}</span>
-                <StarRating value={p.rating} size={14} />
-                <span className="text-gray-500">Stock: {p.stock}</span>
+            <Link href={`/products/${p.id}`} className="flex gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.thumbnail}
+                alt={p.title}
+                className="h-20 w-20 shrink-0 rounded-lg object-cover"
+              />
+              <div className="min-w-0">
+                <h3 className="truncate font-medium text-gray-900">
+                  {p.title}
+                </h3>
+                <p className="mt-0.5 text-sm capitalize text-gray-500">
+                  {p.category}
+                </p>
+                <div className="mt-2 flex items-center gap-3 text-sm">
+                  <span className="font-semibold text-gray-900">
+                    ${p.price}
+                  </span>
+                  <StarRating value={p.rating} size={14} />
+                  <span className="text-gray-500">Stock: {p.stock}</span>
+                </div>
               </div>
+            </Link>
+            <div className="mt-3 flex items-center gap-4 border-t pt-3">
+              <Link
+                href={`/products/${p.id}/edit`}
+                className="text-sm font-medium text-blue-600 hover:underline"
+              >
+                Edit
+              </Link>
+              <button
+                onClick={() => onDelete?.(p)}
+                className="text-sm font-medium text-red-600 hover:underline"
+              >
+                Delete
+              </button>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </>
